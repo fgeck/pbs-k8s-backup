@@ -4,8 +4,9 @@ on:
   push:
     branches:
       - main  # Trigger on changes to the main branch
-    paths:
-      - 'Dockerfile'  # Trigger only if Dockerfile changes
+    # paths:
+    #   - 'Dockerfile'  # Trigger only if Dockerfile changes
+    #   - './backup-postgres.sh'
   pull_request:
     branches:
       - main
