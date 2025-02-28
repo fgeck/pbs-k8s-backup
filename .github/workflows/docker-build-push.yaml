@@ -6,7 +6,6 @@ on:
       - main  # Trigger on changes to the main branch
     paths:
       - 'Dockerfile'  # Trigger only if Dockerfile changes
-      - '**/requirements.txt'  # Add other dependency files if needed
   pull_request:
     branches:
       - main
@@ -49,7 +48,7 @@ jobs:
           push: ${{ github.event_name != 'pull_request' }}  # Push only on main branch or tag
           tags: |
             ghcr.io/${{ github.repository_owner }}/pbs-database-backup:latest
-            ghcr.io/${{ github.repository_owner }}/pbs-database-backup:${{ env.VERSION }}
+            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/pbs-database-backup:{1}', github.repository_owner, env.VERSION) || '' }}
           labels: |
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.source=${{ github.repository_url }}
