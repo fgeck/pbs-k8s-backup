@@ -17,7 +17,9 @@ RUN apt-get update && \
         proxmox-backup-client \
         && rm -rf /var/lib/apt/lists/*
 
-COPY backup-postgres.sh /usr/local/bin/backup-postgres.sh
-RUN chmod +x /usr/local/bin/backup-postgres.sh
+COPY backup-postgres.sh /backup-postgres.sh
+COPY backup-pvcs.sh /backup-pvcs.sh
+RUN chmod +x /backup-postgres.sh && chmod +x /backup-pvcs.sh
 
-ENTRYPOINT ["backup-postgres.sh"]
+ENTRYPOINT ["/bin/bash", "-c"]
+CMD ["/backup-pvcs.sh"]  # Default script
