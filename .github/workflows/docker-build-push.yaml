@@ -40,8 +40,13 @@ jobs:
 
       - name: Create Git tag
         run: |
+          git config --global user.name "github-actions[bot]"
+          git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.increment-version.outputs.version }}
           git push origin ${{ steps.increment-version.outputs.version }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GHCR_TOKEN }}  # has repo access as well
+
 
   build-and-push:
     needs: create-version-tag
