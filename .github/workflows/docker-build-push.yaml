@@ -4,21 +4,48 @@ on:
   push:
     branches:
       - main
-    # paths:
-    #   - 'Dockerfile'  # Trigger only if Dockerfile changes
-    #   - './backup-postgres.sh'
-  pull_request:
-    branches:
-      - main
-  schedule:
-    - cron: '0 0 * * *'  # Optional: Run daily to check for base image updates
-  release:
-    types: [published]  # Trigger when a new GitHub Release is published
 
 jobs:
-  build-and-push:
+  create-version-tag:
     runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.increment-version.outputs.version }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Fetch all history for `git describe`
 
+      - name: Get latest SemVer tag
+        id: get-latest-tag
+        run: |
+          LATEST_TAG=$(git describe --tags --abbrev=0 --match "v[0-9]*.[0-9]*.[0-9]*" 2>/dev/null || echo "v0.0.0")
+          echo "Latest tag: $LATEST_TAG"
+          echo "::set-output name=latest_tag::$LATEST_TAG"
+
+      - name: Increment SemVer version
+        id: increment-version
+        run: |
+          LATEST_TAG=${{ steps.get-latest-tag.outputs.latest_tag }}
+          if [[ "$LATEST_TAG" == "v0.0.0" ]]; then
+            NEW_VERSION="v1.0.0"
+          else
+            # Split the tag into major, minor, and patch
+            IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG#v}"
+            # Increment patch version by default
+            NEW_VERSION="v$MAJOR.$MINOR.$((PATCH + 1))"
+          fi
+          echo "New version: $NEW_VERSION"
+          echo "::set-output name=version::$NEW_VERSION"
+
+      - name: Create Git tag
+        run: |
+          git tag ${{ steps.increment-version.outputs.version }}
+          git push origin ${{ steps.increment-version.outputs.version }}
+
+  build-and-push:
+    needs: create-version-tag
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
@@ -33,32 +60,24 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GHCR_TOKEN }}
 
-      - name: Extract version from tag
-        id: version
-        if: startsWith(github.ref, 'refs/tags/')
-        run: |
-          echo "TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_ENV
-          echo "VERSION=${GITHUB_REF#refs/tags/v}" >> $GITHUB_ENV
-          echo "::set-output name=version::${GITHUB_REF#refs/tags/v}"
-
       - name: Build and push Docker image
         uses: docker/build-push-action@v4
         with:
           context: .
-          platforms: linux/amd64 # ,linux/arm64  # proxmox-backup-client has no arm binary
-          push: ${{ github.event_name != 'pull_request' }}  # Push only on main branch or tag
+          platforms: linux/amd64
+          push: true
           tags: |
             ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:latest
-            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/pbs-k8s-backup:{1}', github.repository_owner, env.VERSION) || '' }}
+            ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }}
           labels: |
-            org.opencontainers.image.version=${{ env.VERSION }}
+            org.opencontainers.image.version=${{ needs.create-version-tag.outputs.version }}
             org.opencontainers.image.source=${{ github.repository_url }}
+
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
         uses: actions/create-release@v1
         with:
-          tag_name: ${{ env.TAG }}
-          release_name: Release ${{ env.TAG }}
+          tag_name: ${{ needs.create-version-tag.outputs.version }}
+          release_name: Release ${{ needs.create-version-tag.outputs.version }}
           draft: false
           prerelease: false
           generate_release_notes: true
