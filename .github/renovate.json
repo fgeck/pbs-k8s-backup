@@ -1,0 +1,18 @@
+{
+    "extends": [
+      "config:base"
+    ],
+    "dependencyDashboard": true,
+    "dependencyDashboardTitle": "Renovate Dashboard 🤖",
+    "packageRules": [
+      {
+        "matchManagers": ["dockerfile"],
+        "matchUpdateTypes": ["minor", "patch"],
+        "automerge": true,
+        "groupName": "Dockerfile dependencies"
+      }
+    ],
+    "schedule": [
+        "* * * * 0,6"
+    ]
+}
