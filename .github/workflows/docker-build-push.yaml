@@ -14,7 +14,7 @@ jobs:
       - name: Checkout repository
         uses: actions/checkout@v3
         with:
-          fetch-depth: 0  # Fetch all history for `git describe`
+          fetch-depth: 0  #Fetch all history for `git describe`
 
       - name: Get latest SemVer tag
         id: get-latest-tag
