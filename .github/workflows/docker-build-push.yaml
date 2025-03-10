@@ -48,8 +48,8 @@ jobs:
           platforms: linux/amd64 # ,linux/arm64  # proxmox-backup-client has no arm binary
           push: ${{ github.event_name != 'pull_request' }}  # Push only on main branch or tag
           tags: |
-            ghcr.io/${{ github.repository_owner }}/pbs-database-backup:latest
-            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/pbs-database-backup:{1}', github.repository_owner, env.VERSION) || '' }}
+            ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:latest
+            ${{ startsWith(github.ref, 'refs/tags/') && format('ghcr.io/{0}/pbs-k8s-backup:{1}', github.repository_owner, env.VERSION) || '' }}
           labels: |
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.source=${{ github.repository_url }}

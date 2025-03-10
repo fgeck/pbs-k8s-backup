@@ -35,7 +35,7 @@ for dir in $(ls -d ./*); do
     export PBS_PASSWORD=$PROXMOX_BACKUP_SERVER_PASSWORD
     proxmox-backup-client backup "$backup_name.pxar:$backup_dir" --repository "$PROXMOX_BACKUP_SERVER_REPOSITORY" --backup-id $backup_name --ns "$PROXMOX_BACKUP_SERVER_NAMESPACE"
     if [[ $? -ne 0 ]]; then
-    ERROR_MSG="$(date '+%Y-%m-%d %H:%M:%S') - Backup failed for $backup_dir"
+        ERROR_MSG="$(date '+%Y-%m-%d %H:%M:%S') - Backup failed for $backup_dir"
         send_telegram_message "$ERROR_MSG"
         echo "$ERROR_MSG"
         exit 1
