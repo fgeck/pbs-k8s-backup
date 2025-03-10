@@ -3,7 +3,7 @@ name: Docker Build, Push, and Release
 on:
   push:
     branches:
-      - main  # Trigger on changes to the main branch
+      - main
     # paths:
     #   - 'Dockerfile'  # Trigger only if Dockerfile changes
     #   - './backup-postgres.sh'
@@ -53,7 +53,6 @@ jobs:
           labels: |
             org.opencontainers.image.version=${{ env.VERSION }}
             org.opencontainers.image.source=${{ github.repository_url }}
-
       - name: Create GitHub Release
         if: startsWith(github.ref, 'refs/tags/')
         uses: actions/create-release@v1
