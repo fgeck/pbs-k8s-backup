@@ -1,23 +1,48 @@
 {
-  "extends": [
-    "config:recommended"
-  ],
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": ["config:recommended"],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "packageRules": [
     {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
+      "matchManagers": ["dockerfile"],
+      "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "groupName": "Dockerfile dependencies"
     }
   ],
-  "schedule": [
-    "* * * * 0,6"
+  "schedule": ["* * * * 0,6"],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\sENV .*?_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "datasourceTemplate": "deb",
+      "versioningTemplate": "deb"
+    }
+  ],
+  "regexManagers": [
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*depName=postgresql-client-17\\sENV POSTGRESQL_CLIENT_17_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "depNameTemplate": "postgresql-client-17",
+      "datasourceTemplate": "deb",
+      "registryUrlTemplate": "http://apt.postgresql.org/pub/repos/apt",
+      "versioningTemplate": "deb"
+    },
+    {
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*depName=proxmox-backup-client\\sENV PBS_CLIENT_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "depNameTemplate": "proxmox-backup-client",
+      "datasourceTemplate": "deb",
+      "registryUrlTemplate": "http://download.proxmox.com/debian/pbs-client",
+      "versioningTemplate": "deb"
+    }
   ]
 }
