@@ -1,5 +1,4 @@
-FROM debian:bookworm-20250224-slim
-
+FROM debian@sha256:12c396bd585df7ec21d5679bb6a83d4878bc4415ce926c9e5ea6426d23c60bdc
 
 # renovate: release=bookworm depName=curl
 ENV CURL_VERSION="7.88.1-10+deb12u8"
@@ -7,9 +6,9 @@ ENV CURL_VERSION="7.88.1-10+deb12u8"
 ENV CA_CERTIFIFCATES_VERSION="20230311"
 # renovate: release=bookworm depName=gnupg
 ENV GNUPG_VERSION="2.2.40-1.1"
-# renovate: release=bookworm depName=postgresql-client-17
+# Todo: Renovate
 ENV POSTGRESQL_CLIENT_17_VERSION="17.4-1.pgdg120+2"
-# renovate: release=bookworm depName=proxmox-backup-client
+# Todo: Renovate
 ENV PBS_CLIENT_VERSION="3.3.2-1"
 
 

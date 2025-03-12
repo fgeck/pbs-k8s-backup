@@ -17,32 +17,18 @@
       "customType": "regex",
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
-        "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\sENV .*?_VERSION=\"(?<currentValue>.*)\""
+        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\sENV .*?_VERSION=\"(?<currentValue>.*)\"\\s"
       ],
-      "datasourceTemplate": "deb",
-      "versioningTemplate": "deb"
-    }
-  ],
-  "regexManagers": [
-    {
-      "fileMatch": ["^Dockerfile$"],
-      "matchStrings": [
-        "#\\s*renovate:\\s*depName=postgresql-client-17\\sENV POSTGRESQL_CLIENT_17_VERSION=\"(?<currentValue>.*)\""
-      ],
-      "depNameTemplate": "postgresql-client-17",
-      "datasourceTemplate": "deb",
-      "registryUrlTemplate": "http://apt.postgresql.org/pub/repos/apt",
-      "versioningTemplate": "deb"
+      "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
     {
+      "customType": "regex",
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
-        "#\\s*renovate:\\s*depName=proxmox-backup-client\\sENV PBS_CLIENT_VERSION=\"(?<currentValue>.*)\""
+        "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\sENV .*?_VERSION=\"(?<currentValue>.*)\""
       ],
-      "depNameTemplate": "proxmox-backup-client",
-      "datasourceTemplate": "deb",
-      "registryUrlTemplate": "http://download.proxmox.com/debian/pbs-client",
-      "versioningTemplate": "deb"
+      "registryUrlTemplate": "https://deb.debian.org/debian?{{#if release }}release={{release}}{{else}}suite=stable{{/if}}&components=main,contrib,non-free&binaryArch=amd64",
+      "datasourceTemplate": "deb"
     }
   ]
 }
