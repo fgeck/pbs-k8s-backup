@@ -9,7 +9,7 @@ ENV GNUPG_VERSION="2.2.40-1.1"
 # Todo: Renovate
 ENV POSTGRESQL_CLIENT_17_VERSION="17.4-1.pgdg120+2"
 # Todo: Renovate
-ENV PBS_CLIENT_VERSION="3.3.2-1"
+ENV PBS_CLIENT_VERSION="3.2.14-1"
 
 
 RUN apt-get update && \
