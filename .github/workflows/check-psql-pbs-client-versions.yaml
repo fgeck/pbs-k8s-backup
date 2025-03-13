@@ -1,0 +1,75 @@
+name: Check and update postgresql-client-17 and proxmox-backup-client
+
+on:
+  schedule:
+    - cron: '0 0 * * *'  # Runs daily at midnight UTC
+  workflow_dispatch:  # Allows manual triggering
+
+jobs:
+  check-version:
+    runs-on: ubuntu-latest
+    container:
+      image: debian:bookworm
+    strategy:
+      matrix:
+        package:
+          - name: "postgresql-client-17"
+            dockerfile_env_var: POSTGRESQL_CLIENT_17_VERSION
+            repo_setup: |
+              curl https://www.postgresql.org/media/keys/ACCC4CF8.asc | apt-key add - && \
+              echo "deb http://apt.postgresql.org/pub/repos/apt bookworm-pgdg main" > /etc/apt/sources.list.d/pgdg.list
+            version_extract: grep 'ENV POSTGRESQL_CLIENT_17_VERSION' Dockerfile | cut -d'"' -f2
+          - name: "proxmox-backup-client"
+            dockerfile_env_var: PROXMOX_BACKUP_CLIENT_VERSION
+            repo_setup: |
+              curl -o /etc/apt/trusted.gpg.d/proxmox-release-bookworm.gpg https://enterprise.proxmox.com/debian/proxmox-release-bookworm.gpg && \
+              echo "deb http://download.proxmox.com/debian/pbs-client bookworm main" > /etc/apt/sources.list.d/pbs-client.list
+            version_extract: grep 'ENV PROXMOX_BACKUP_CLIENT_VERSION' Dockerfile | cut -d'"' -f2
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up repository and update package list
+        run: |
+          apt-get update
+          apt-get install -y curl gnupg2 git
+          ${{ matrix.package.repo_setup }}
+          apt-get update
+
+      - name: Get current and latest versions
+        id: version_check
+        run: |
+          CURRENT_VERSION=$(${{ matrix.package.version_extract }})
+          LATEST_VERSION=$(apt-cache policy ${{ matrix.package.name }} | grep Candidate | cut -d: -f2 | tr -d ' ')
+          echo "Current version: $CURRENT_VERSION"
+          echo "Latest version: $LATEST_VERSION"
+
+          if [ "$CURRENT_VERSION" != "$LATEST_VERSION" ]; then
+              echo "new_version=$LATEST_VERSION" >> $GITHUB_OUTPUT
+              echo "update_needed=true" >> $GITHUB_OUTPUT
+          else
+              echo "update_needed=false" >> $GITHUB_OUTPUT
+          fi
+        shell: bash
+
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Update Dockerfile with new version
+        if: steps.version_check.outputs.update_needed == 'true'
+        run: |
+          chmod +x scripts/update-dockerfile.sh
+          ./scripts/update-dockerfile.sh "${{ matrix.package.dockerfile_env_var }}" "${{ steps.version_check.outputs.new_version }}"
+        shell: bash
+
+      - name: Create Pull Request if update is needed
+        if: steps.version_check.outputs.update_needed == 'true'
+        uses: peter-evans/create-pull-request@v7
+        with:
+          add-paths: Dockerfile
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
+          branch: "update/${{ matrix.package.name }}-${{ steps.version_check.outputs.new_version }}"
+          title: "Update ${{ matrix.package.name }} to ${{ steps.version_check.outputs.new_version }}"
+          body: "This PR updates ${{ matrix.package.name }} to version ${{ steps.version_check.outputs.new_version }}."
+          commit-message: "Update ${{ matrix.package.name }} to ${{ steps.version_check.outputs.new_version }}"
+          labels: "dependencies, automated"
