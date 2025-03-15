@@ -1,7 +1,7 @@
 FROM debian@sha256:12c396bd585df7ec21d5679bb6a83d4878bc4415ce926c9e5ea6426d23c60bdc
 
 # renovate: release=bookworm depName=curl
-ENV CURL_VERSION="7.88.1-10+deb12u8"
+ENV CURL_VERSION="7.88.1-10+deb12u12"
 # renovate: release=bookworm depName=ca-certificates
 ENV CA_CERTIFIFCATES_VERSION="20230311"
 # renovate: release=bookworm depName=gnupg
