@@ -1,4 +1,4 @@
-FROM debian@sha256:12c396bd585df7ec21d5679bb6a83d4878bc4415ce926c9e5ea6426d23c60bdc
+FROM debian@sha256:18023f131f52fc3ea21973cabffe0b216c60b417fd2478e94d9d59981ebba6af
 
 # renovate: release=bookworm depName=curl
 ENV CURL_VERSION="7.88.1-10+deb12u8"
