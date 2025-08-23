@@ -9,7 +9,7 @@ jobs:
   check-version:
     runs-on: ubuntu-latest
     container:
-      image: debian:bookworm
+      image: debian:trixie
     strategy:
       matrix:
         package:
