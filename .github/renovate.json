@@ -9,15 +9,26 @@
       "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "groupName": "Dockerfile dependencies"
+    },
+    {
+      "matchPackageNames": ["proxmox-backup-client"],
+      "enabled": false,
+      "description": "PBS client manually managed for server compatibility"
     }
   ],
   "schedule": ["* * * * 0,6"],
+  "customDatasources": {
+    "postgresql": {
+      "defaultRegistryUrlTemplate": "https://apt.postgresql.org/pub/repos/apt/dists/bookworm-pgdg/main/binary-amd64/Packages",
+      "format": "plain"
+    }
+  },
   "customManagers": [
     {
       "customType": "regex",
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
-        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\sENV .*?_VERSION=\"(?<currentValue>.*)\"\\s"
+        "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\"\\s*"
       ],
       "versioningTemplate": "{{#if versioning}}{{{versioning}}}{{else}}semver{{/if}}"
     },
@@ -25,10 +36,20 @@
       "customType": "regex",
       "fileMatch": ["^Dockerfile$"],
       "matchStrings": [
-        "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\sENV .*?_VERSION=\"(?<currentValue>.*)\""
+        "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\""
       ],
       "registryUrlTemplate": "https://deb.debian.org/debian?{{#if release }}release={{release}}{{else}}suite=stable{{/if}}&components=main,contrib,non-free&binaryArch=amd64",
       "datasourceTemplate": "deb"
+    },
+    {
+      "customType": "regex",
+      "fileMatch": ["^Dockerfile$"],
+      "matchStrings": [
+        "#\\s*renovate:\\s*datasource=custom\\.postgresql depName=(?<depName>.*?)\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\""
+      ],
+      "datasourceTemplate": "repology",
+      "depNameTemplate": "postgresql-client-17",
+      "versioningTemplate": "loose"
     }
   ]
 }

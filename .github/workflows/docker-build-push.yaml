@@ -4,19 +4,78 @@ on:
   push:
     branches:
       - main
-  # workflow_dispatch:
+    paths:
+      - 'Dockerfile'
+      - 'backup-*.sh'
+      - 'entrypoint.sh'
+      - '.github/workflows/docker-build-push.yaml'
+  pull_request:
+    branches:
+      - main
+    paths:
+      - 'Dockerfile'
+      - 'backup-*.sh'
+      - 'entrypoint.sh'
+  workflow_dispatch:
+    inputs:
+      version_bump:
+        description: 'Version bump type'
+        required: false
+        default: 'patch'
+        type: choice
+        options:
+          - patch
+          - minor
+          - major
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build test image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64
+          push: false
+          tags: pbs-k8s-backup:test
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Test container functionality
+        run: |
+          # Test entrypoint help
+          docker run --rm pbs-k8s-backup:test help
+          
+          # Test script existence and permissions
+          docker run --rm pbs-k8s-backup:test bash -c "ls -la /backup-*.sh /entrypoint.sh"
+          
+          # Test package versions
+          docker run --rm pbs-k8s-backup:test bash -c "
+            proxmox-backup-client --version
+            psql --version
+            curl --version
+          "
+
   create-version-tag:
     runs-on: ubuntu-latest
+    needs: test
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
     outputs:
       version: ${{ steps.increment-version.outputs.version }}
+      should_release: ${{ steps.increment-version.outputs.should_release }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
-          fetch-depth: 0  #Fetch all history for `git describe`
-          token: ${{ secrets.GH_ACCESS_TOKEN }} 
+          fetch-depth: 0
+          token: ${{ secrets.GH_ACCESS_TOKEN }}
 
       - name: Get latest SemVer tag
         id: get-latest-tag
@@ -29,33 +88,50 @@ jobs:
         id: increment-version
         run: |
           LATEST_TAG=${{ steps.get-latest-tag.outputs.latest_tag }}
+          BUMP_TYPE="${{ github.event.inputs.version_bump || 'patch' }}"
+          
           if [[ "$LATEST_TAG" == "v0.0.0" ]]; then
             NEW_VERSION="v1.0.0"
           else
             # Split the tag into major, minor, and patch
             IFS='.' read -r MAJOR MINOR PATCH <<< "${LATEST_TAG#v}"
-            # Increment patch version by default
-            NEW_VERSION="v$MAJOR.$MINOR.$((PATCH + 1))"
+            
+            case "$BUMP_TYPE" in
+              "major")
+                NEW_VERSION="v$((MAJOR + 1)).0.0"
+                ;;
+              "minor")
+                NEW_VERSION="v$MAJOR.$((MINOR + 1)).0"
+                ;;
+              "patch"|*)
+                NEW_VERSION="v$MAJOR.$MINOR.$((PATCH + 1))"
+                ;;
+            esac
           fi
-          echo "New version: $NEW_VERSION"
+          
+          echo "New version: $NEW_VERSION (bump: $BUMP_TYPE)"
           echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "should_release=true" >> $GITHUB_OUTPUT
 
       - name: Create Git tag
+        if: steps.increment-version.outputs.should_release == 'true'
         run: |
           git config --global user.name "github-actions[bot]"
           git config --global user.email "github-actions[bot]@users.noreply.github.com"
           git tag ${{ steps.increment-version.outputs.version }}
           git push origin ${{ steps.increment-version.outputs.version }}
-        env:
-          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}  # has repo access as well
 
 
   build-and-push:
-    needs: create-version-tag
+    needs: [test, create-version-tag]
     runs-on: ubuntu-latest
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main' && needs.create-version-tag.outputs.should_release == 'true'
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -67,26 +143,104 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GH_ACCESS_TOKEN }}
 
+      - name: Extract metadata
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup
+          tags: |
+            type=ref,event=branch
+            type=semver,pattern={{version}},value=${{ needs.create-version-tag.outputs.version }}
+            type=semver,pattern={{major}}.{{minor}},value=${{ needs.create-version-tag.outputs.version }}
+            type=semver,pattern={{major}},value=${{ needs.create-version-tag.outputs.version }}
+            type=raw,value=latest,enable={{is_default_branch}}
+          labels: |
+            org.opencontainers.image.title=PBS K8s Backup
+            org.opencontainers.image.description=Proxmox Backup Server client for Kubernetes PVC and PostgreSQL backups
+            org.opencontainers.image.vendor=${{ github.repository_owner }}
+            org.opencontainers.image.version=${{ needs.create-version-tag.outputs.version }}
+            org.opencontainers.image.revision=${{ github.sha }}
+            org.opencontainers.image.source=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.url=${{ github.server_url }}/${{ github.repository }}
+            org.opencontainers.image.documentation=${{ github.server_url }}/${{ github.repository }}/blob/main/README.md
+
       - name: Build and push Docker image
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64
+          platforms: linux/amd64,linux/arm64
           push: true
-          tags: |
-            ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:latest
-            ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }}
-          labels: |
-            org.opencontainers.image.version=${{ needs.create-version-tag.outputs.version }}
-            org.opencontainers.image.source=${{ github.repository_url }}
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          provenance: true
+          sbom: true
+
+      - name: Run Trivy vulnerability scanner
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }}
+          format: 'sarif'
+          output: 'trivy-results.sarif'
+
+      - name: Upload Trivy scan results to GitHub Security tab
+        uses: github/codeql-action/upload-sarif@v3
+        if: always()
+        with:
+          sarif_file: 'trivy-results.sarif'
 
       - name: Create GitHub Release
-        if: startsWith(github.ref, 'refs/tags/')
-        uses: actions/create-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ needs.create-version-tag.outputs.version }}
-          release_name: Release ${{ needs.create-version-tag.outputs.version }}
+          name: Release ${{ needs.create-version-tag.outputs.version }}
           draft: false
           prerelease: false
+          generate_release_notes: true
+          body: |
+            ## Changes in ${{ needs.create-version-tag.outputs.version }}
+            
+            ### Container Image
+            - `ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }}`
+            - `ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:latest`
+            
+            ### Platforms
+            - linux/amd64
+            - linux/arm64
+            
+            ### Usage
+            ```bash
+            docker run --rm ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }} help
+            ```
         env:
-          GH_ACCESS_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+          GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
+
+  pr-test:
+    runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
+    needs: test
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build PR image (no push)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          platforms: linux/amd64,linux/arm64
+          push: false
+          tags: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:pr-${{ github.event.number }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run Trivy vulnerability scanner on PR
+        uses: aquasecurity/trivy-action@master
+        with:
+          image-ref: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:pr-${{ github.event.number }}
+          format: 'table'
+          exit-code: '1'
+          severity: 'CRITICAL,HIGH'
