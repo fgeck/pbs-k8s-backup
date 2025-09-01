@@ -45,6 +45,7 @@ jobs:
           platforms: linux/amd64
           push: false
           tags: pbs-k8s-backup:test
+          load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
