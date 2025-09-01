@@ -7,7 +7,7 @@ ENV CA_CERTIFICATES_VERSION="20230311+deb12u1"
 # renovate: release=bookworm depName=gnupg
 ENV GNUPG_VERSION="2.2.40-1.1"
 # renovate: datasource=custom.postgresql depName=postgresql-client-17
-ENV POSTGRESQL_CLIENT_17_VERSION="17.6-1.pgdg120+1"
+ENV POSTGRESQL_CLIENT_17_VERSION="17.6-1.pgdg12+1"
 # Manually managed for PBS server 3.3.6 compatibility - renovate:ignore
 ENV PROXMOX_BACKUP_CLIENT_VERSION="3.3.*"
 
