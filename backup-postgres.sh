@@ -37,8 +37,12 @@ trap cleanup EXIT
 LOG_FILE=/var/log/backup.log
 BACKUP_DIRECTORY="/backup"
 BACKUP_FILE="/backup/postgres-backup.sql"
+
+# Create backup directory if it doesn't exist
+mkdir -p "$BACKUP_DIRECTORY"
+
 echo "Starting Postgres backup to file"
-PGPASSWORD="$PGPASSWORD" pg_dumpall -h "$PGHOST" -U "$PGUSER" > "$BACKUP_FILE"
+PGPASSWORD="$POSTGRES_PASSWORD" pg_dumpall -h "$POSTGRES_HOST" -U "$POSTGRES_USER" > "$BACKUP_FILE"
 echo "Postgres successfully backupped to file: $(du -h "$BACKUP_FILE" | cut -f1)"
 
 export PBS_FINGERPRINT=$PROXMOX_BACKUP_SERVER_FINGERPRINT

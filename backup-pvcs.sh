@@ -1,4 +1,10 @@
-!#/bin/bash
+#!/bin/bash
+
+# Change to the PVC host path directory
+cd "${PVC_HOST_PATH:-/pvcs}" || {
+    echo "Error: Cannot change to PVC_HOST_PATH directory: ${PVC_HOST_PATH:-/pvcs}"
+    exit 1
+}
 
 required_vars=("PVC_HOST_PATH" "PROXMOX_BACKUP_SERVER_NAMESPACE" "PROXMOX_BACKUP_SERVER_PASSWORD" "PROXMOX_BACKUP_SERVER_FINGERPRINT" "PROXMOX_BACKUP_SERVER_REPOSITORY" "TELEGRAM_BOT_TOKEN" "TELEGRAM_CHAT_ID")
 
