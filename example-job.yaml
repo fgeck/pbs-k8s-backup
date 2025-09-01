@@ -30,7 +30,6 @@ spec:
           hostPath:
             path: /opt/k3s/data
             type: Directory
-
 ---
 # Example Job for testing PostgreSQL backup
 apiVersion: batch/v1
@@ -46,15 +45,13 @@ spec:
           image: ghcr.io/fgeck/pbs-k8s-backup:latest
           command: ["/entrypoint.sh", "postgres"]
           env:
+            - name: PROXMOX_BACKUP_SERVER_NAMESPACE
+              value: k3s/databases
             - name: BACKUP_NAME
               value: "test-postgres"
-            - name: POSTGRES_HOST
-              value: "postgresql.default.svc.cluster.local"
-            - name: POSTGRES_USER
-              value: "postgres"
           envFrom:
             - secretRef:
-                name: postgres-backup-secret
+                name: default-postgres-backup-secret
             - secretRef:
                 name: pvc-backup-secret # For PBS credentials
           volumeMounts:
