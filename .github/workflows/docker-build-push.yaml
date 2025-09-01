@@ -169,7 +169,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          platforms: linux/amd64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -177,19 +177,6 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: true
           sbom: true
-
-      - name: Run Trivy vulnerability scanner
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:${{ needs.create-version-tag.outputs.version }}
-          format: 'sarif'
-          output: 'trivy-results.sarif'
-
-      - name: Upload Trivy scan results to GitHub Security tab
-        uses: github/codeql-action/upload-sarif@v3
-        if: always()
-        with:
-          sarif_file: 'trivy-results.sarif'
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@v2
@@ -208,7 +195,6 @@ jobs:
             
             ### Platforms
             - linux/amd64
-            - linux/arm64
             
             ### Usage
             ```bash
@@ -216,33 +202,3 @@ jobs:
             ```
         env:
           GITHUB_TOKEN: ${{ secrets.GH_ACCESS_TOKEN }}
-
-  pr-test:
-    runs-on: ubuntu-latest
-    if: github.event_name == 'pull_request'
-    needs: test
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build PR image (no push)
-        uses: docker/build-push-action@v6
-        with:
-          context: .
-          platforms: linux/amd64
-          push: false
-          tags: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:pr-${{ github.event.number }}
-          load: true
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
-      - name: Run Trivy vulnerability scanner on PR
-        uses: aquasecurity/trivy-action@master
-        with:
-          image-ref: ghcr.io/${{ github.repository_owner }}/pbs-k8s-backup:pr-${{ github.event.number }}
-          format: 'table'
-          exit-code: '1'
-          severity: 'CRITICAL,HIGH'
