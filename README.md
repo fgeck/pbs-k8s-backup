@@ -36,7 +36,7 @@ spec:
             volumeMounts:
             - name: temp-backup
               mountPath: /backup
-            args: ["/backup_postgres.sh"]
+            command: ["/entrypoint.sh", "postgres"]
           restartPolicy: never
           volumes:
           - name: temp-backup
@@ -86,7 +86,7 @@ spec:
             volumeMounts:
             - name: pvcs
               mountPath: /pvcs
-            args: ["/backup_pvcs.sh"]
+            command: ["/entrypoint.sh", "pvcs"]
           restartPolicy: never
           volumes:
           - name: pvcs
