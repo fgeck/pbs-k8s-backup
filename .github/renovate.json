@@ -1,22 +1,33 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
-  "extends": ["config:recommended"],
+  "extends": [
+    "config:recommended"
+  ],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
   "packageRules": [
     {
-      "matchManagers": ["dockerfile"],
-      "matchUpdateTypes": ["minor", "patch"],
+      "matchManagers": [
+        "dockerfile"
+      ],
+      "matchUpdateTypes": [
+        "minor",
+        "patch"
+      ],
       "automerge": true,
       "groupName": "Dockerfile dependencies"
     },
     {
-      "matchPackageNames": ["proxmox-backup-client"],
+      "matchPackageNames": [
+        "proxmox-backup-client"
+      ],
       "enabled": false,
       "description": "PBS client manually managed for server compatibility"
     }
   ],
-  "schedule": ["* * * * 0,6"],
+  "schedule": [
+    "* * * * 0,6"
+  ],
   "customDatasources": {
     "postgresql": {
       "defaultRegistryUrlTemplate": "https://apt.postgresql.org/pub/repos/apt/dists/bookworm-pgdg/main/binary-amd64/Packages",
@@ -26,7 +37,9 @@
   "customManagers": [
     {
       "customType": "regex",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": [
         "#\\s*renovate:\\s*datasource=(?<datasource>.*?) depName=(?<depName>.*?)( versioning=(?<versioning>.*?))?\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\"\\s*"
       ],
@@ -34,7 +47,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": [
         "#\\s*renovate:\\s*?(release=(?<release>.*?))?\\s*depName=(?<depName>.*?)?\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\""
       ],
@@ -43,7 +58,9 @@
     },
     {
       "customType": "regex",
-      "fileMatch": ["^Dockerfile$"],
+      "managerFilePatterns": [
+        "/^Dockerfile$/"
+      ],
       "matchStrings": [
         "#\\s*renovate:\\s*datasource=custom\\.postgresql depName=(?<depName>.*?)\\s*ENV .*?_VERSION=\"(?<currentValue>.*)\""
       ],
