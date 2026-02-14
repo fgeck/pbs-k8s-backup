@@ -1,7 +1,7 @@
 FROM debian:bookworm
 
 # renovate: release=bookworm depName=curl
-ENV CURL_VERSION="7.88.1-10+deb12u12"
+ENV CURL_VERSION="7.88.1-10+deb12u14"
 # renovate: release=bookworm depName=ca-certificates
 ENV CA_CERTIFICATES_VERSION="20230311+deb12u1"
 # renovate: release=bookworm depName=gnupg
