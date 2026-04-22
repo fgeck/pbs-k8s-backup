@@ -6,7 +6,7 @@ cd "${PVC_HOST_PATH:-/pvcs}" || {
     exit 1
 }
 
-required_vars=("PVC_HOST_PATH" "PROXMOX_BACKUP_SERVER_NAMESPACE" "PROXMOX_BACKUP_SERVER_PASSWORD" "PROXMOX_BACKUP_SERVER_FINGERPRINT" "PROXMOX_BACKUP_SERVER_REPOSITORY" "TELEGRAM_BOT_TOKEN" "TELEGRAM_CHAT_ID")
+required_vars=("PVC_HOST_PATH" "PROXMOX_BACKUP_SERVER_NAMESPACE" "PROXMOX_BACKUP_SERVER_PASSWORD" "PROXMOX_BACKUP_SERVER_FINGERPRINT" "PROXMOX_BACKUP_SERVER_REPOSITORY" "TELEGRAM_BOT_TOKEN" "TELEGRAM_CHAT_ID" "PUSHOVER_BACKUPS_TOKEN" "PUSHOVER_USER_KEY")
 
 # Flag to track if all variables are set
 all_set=true
@@ -30,6 +30,18 @@ send_telegram_message() {
         -d text="$message"
 }
 
+send_pushover_message() {
+    local title="$1"
+    local message="$2"
+    curl -s \
+        --form-string "token=${PUSHOVER_BACKUPS_TOKEN}" \
+        --form-string "user=${PUSHOVER_USER_KEY}" \
+        --form-string "title=${title}" \
+        --form-string "message=${message}" \
+        --form-string "priority=1" \
+        "https://api.pushover.net/1/messages.json" > /dev/null
+}
+
 
 for dir in $(ls -d ./*); do
     # Remove the trailing slash from the directory name
@@ -42,7 +54,7 @@ for dir in $(ls -d ./*); do
     proxmox-backup-client backup "$backup_name.pxar:$backup_dir" --repository "$PROXMOX_BACKUP_SERVER_REPOSITORY" --backup-id $backup_name --ns "$PROXMOX_BACKUP_SERVER_NAMESPACE"
     if [[ $? -ne 0 ]]; then
         ERROR_MSG="$(date '+%Y-%m-%d %H:%M:%S') - Backup failed for $backup_dir"
-        send_telegram_message "$ERROR_MSG"
+        send_pushover_message "Backup Failed" "$ERROR_MSG"
         echo "$ERROR_MSG"
         exit 1
     else
