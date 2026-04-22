@@ -1,32 +1,39 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":semanticCommits"
   ],
   "dependencyDashboard": true,
   "dependencyDashboardTitle": "Renovate Dashboard 🤖",
+  "automerge": true,
+  "platformAutomerge": true,
+  "schedule": ["before 9am on monday"],
   "packageRules": [
     {
-      "matchManagers": [
-        "dockerfile"
-      ],
-      "matchUpdateTypes": [
-        "minor",
-        "patch"
-      ],
+      "description": "Automerge Dockerfile minor and patch updates",
+      "matchManagers": ["dockerfile"],
+      "matchUpdateTypes": ["minor", "patch"],
       "automerge": true,
       "groupName": "Dockerfile dependencies"
     },
     {
-      "matchPackageNames": [
-        "proxmox-backup-client"
-      ],
-      "enabled": false,
-      "description": "PBS client manually managed for server compatibility"
+      "description": "Group and automerge GitHub Actions minor and patch updates",
+      "matchManagers": ["github-actions"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "automerge": true,
+      "groupName": "github-actions (non-major)"
+    },
+    {
+      "description": "Major updates require review",
+      "matchUpdateTypes": ["major"],
+      "automerge": false
+    },
+    {
+      "description": "PBS client manually managed for server compatibility",
+      "matchPackageNames": ["proxmox-backup-client"],
+      "enabled": false
     }
-  ],
-  "schedule": [
-    "* * * * 0,6"
   ],
   "customDatasources": {
     "postgresql": {

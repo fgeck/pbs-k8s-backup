@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # Required Env Vars
-required_vars=("BACKUP_NAME" "POSTGRES_HOST" "POSTGRES_USER" "POSTGRES_PASSWORD" "PROXMOX_BACKUP_SERVER_NAMESPACE" "PROXMOX_BACKUP_SERVER_PASSWORD" "PROXMOX_BACKUP_SERVER_FINGERPRINT" "PROXMOX_BACKUP_SERVER_REPOSITORY" "TELEGRAM_BOT_TOKEN" "TELEGRAM_CHAT_ID")
+required_vars=("BACKUP_NAME" "POSTGRES_HOST" "POSTGRES_USER" "POSTGRES_PASSWORD" "PROXMOX_BACKUP_SERVER_NAMESPACE" "PROXMOX_BACKUP_SERVER_PASSWORD" "PROXMOX_BACKUP_SERVER_FINGERPRINT" "PROXMOX_BACKUP_SERVER_REPOSITORY")
 
 # Flag to track if all variables are set
 all_set=true
@@ -18,11 +18,23 @@ if [[ "$all_set" == false ]]; then
     exit 1
 fi
 
-send_telegram_message() {
-    local message="$1"
-    curl -s -X POST "https://api.telegram.org/bot$TELEGRAM_BOT_TOKEN/sendMessage" \
-        -d chat_id="$TELEGRAM_CHAT_ID" \
-        -d text="$message"
+send_notifications() {
+    local title="$1"
+    local message="$2"
+    if [[ -n "${TELEGRAM_BOT_TOKEN}" ]] && [[ -n "${TELEGRAM_CHAT_ID}" ]]; then
+        curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/sendMessage" \
+            -d chat_id="${TELEGRAM_CHAT_ID}" \
+            -d text="${message}" > /dev/null
+    fi
+    if [[ -n "${PUSHOVER_BACKUPS_TOKEN}" ]] && [[ -n "${PUSHOVER_USER_KEY}" ]]; then
+        curl -s \
+            --form-string "token=${PUSHOVER_BACKUPS_TOKEN}" \
+            --form-string "user=${PUSHOVER_USER_KEY}" \
+            --form-string "title=${title}" \
+            --form-string "message=${message}" \
+            --form-string "priority=1" \
+            "https://api.pushover.net/1/messages.json" > /dev/null
+    fi
 }
 
 # Function to clean up backup files
@@ -50,11 +62,10 @@ export PBS_PASSWORD=$PROXMOX_BACKUP_SERVER_PASSWORD
 proxmox-backup-client backup "$BACKUP_NAME.pxar:$BACKUP_DIRECTORY" --repository "$PROXMOX_BACKUP_SERVER_REPOSITORY" --backup-id $BACKUP_NAME --ns $PROXMOX_BACKUP_SERVER_NAMESPACE
 if [[ $? -ne 0 ]]; then
     ERROR_MSG="$(date '+%Y-%m-%d %H:%M:%S') - Backup failed for $BACKUP_FILE"
-    send_telegram_message "$ERROR_MSG"
+    send_notifications "Backup Failed" "$ERROR_MSG"
     echo "$ERROR_MSG"
     exit 1
 else
     SUCCESS_MSG="$(date '+%Y-%m-%d %H:%M:%S') - Backup for $BACKUP_FILE completed successfully."
     echo "$SUCCESS_MSG"
-    # send_telegram_message "$SUCCESS_MSG"
 fi
