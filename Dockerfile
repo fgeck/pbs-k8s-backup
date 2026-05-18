@@ -1,7 +1,7 @@
 FROM debian:trixie-20260505
 
 # renovate: release=trixie depName=curl
-ENV CURL_VERSION="8.14.1-2+deb13u2"
+ENV CURL_VERSION="8.14.1-2+deb13u3"
 # renovate: release=trixie depName=ca-certificates
 ENV CA_CERTIFICATES_VERSION="20250419"
 # renovate: release=trixie depName=gnupg
