@@ -45,6 +45,10 @@ case "$COMMAND" in
         echo "Starting PostgreSQL backup..."
         exec /backup-postgres.sh
         ;;
+    "mongodb")
+        echo "Starting MongoDB backup..."
+        exec /backup-mongodb.sh
+        ;;
     "bash")
         echo "Starting interactive bash shell..."
         exec /bin/bash
