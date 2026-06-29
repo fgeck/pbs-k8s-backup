@@ -1,4 +1,4 @@
-FROM debian:trixie-20260610
+FROM debian:trixie-20260623
 
 # renovate: release=trixie depName=curl
 ENV CURL_VERSION="8.14.1-2+deb13u3"
