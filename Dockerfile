@@ -3,7 +3,7 @@ FROM debian:trixie-20260623
 # renovate: release=trixie depName=curl
 ENV CURL_VERSION="8.14.1-2+deb13u3"
 # renovate: release=trixie depName=ca-certificates
-ENV CA_CERTIFICATES_VERSION="20250419"
+ENV CA_CERTIFICATES_VERSION="20250419+deb13u1"
 # renovate: release=trixie depName=gnupg
 ENV GNUPG_VERSION="2.4.7-21+deb13u1"
 # renovate: datasource=repology depName=debian_13/postgresql-client-17
